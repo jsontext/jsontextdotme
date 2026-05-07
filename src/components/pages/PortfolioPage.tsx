@@ -11,6 +11,7 @@ interface Project {
   robloxUrl: string;
   discordUrl: string;
   codeUrl: string;
+  enabled: boolean; // 易於啟用的布林狀態
 }
 
 // 主型專案數據 (Hero Cards)
@@ -26,9 +27,10 @@ const MAIN_PROJECTS: Project[] = [
       "/img/bloxtype/scene3.png",
       "/img/bloxtype/scene4.png",
     ],
-    robloxUrl: "https://www.roblox.com/games/your-game-id",
-    discordUrl: "https://discord.gg/your-invite-code",
-    codeUrl: "https://github.com/your-repo"
+    robloxUrl: "https://www.roblox.com/games/116057242221880/Bloxtype",
+    discordUrl: "https://discord.gg/bloxtype",
+    codeUrl: "", // 留空將自動隱藏圖標
+    enabled: true 
   },
   {
     id: 'haliford',
@@ -43,7 +45,8 @@ const MAIN_PROJECTS: Project[] = [
     ],
     robloxUrl: "https://www.roblox.com/games/haliford-id",
     discordUrl: "https://discord.gg/haliford",
-    codeUrl: "https://github.com/haliford-repo"
+    codeUrl: "", 
+    enabled: false 
   }
 ];
 
@@ -55,9 +58,10 @@ const SMALL_PROJECTS: Project[] = [
     description: "Short description of a thin project focusing on specialized mechanics.",
     logoUrl: "/img/small1/logo.png",
     images: ["/img/small1/scene1.png"],
-    robloxUrl: "#",
-    discordUrl: "#",
-    codeUrl: "#"
+    robloxUrl: "",
+    discordUrl: "",
+    codeUrl: "",
+    enabled: false 
   },
   {
     id: 'small-2',
@@ -65,9 +69,10 @@ const SMALL_PROJECTS: Project[] = [
     description: "Another innovative project exploring unique visual styles and shaders.",
     logoUrl: "/img/small2/logo.png",
     images: ["/img/small2/scene1.png"],
-    robloxUrl: "#",
-    discordUrl: "#",
-    codeUrl: "#"
+    robloxUrl: "",
+    discordUrl: "",
+    codeUrl: "",
+    enabled: false 
   },
   {
     id: 'medium-1',
@@ -75,9 +80,10 @@ const SMALL_PROJECTS: Project[] = [
     description: "A slightly wider display for a medium-sized project that bridges multiple gameplay systems.",
     logoUrl: "/img/medium1/logo.png",
     images: ["/img/medium1/scene1.png"],
-    robloxUrl: "#",
-    discordUrl: "#",
-    codeUrl: "#"
+    robloxUrl: "",
+    discordUrl: "",
+    codeUrl: "",
+    enabled: false 
   }
 ];
 
@@ -86,14 +92,14 @@ const RobloxIcon = () => (
   <svg className="w-3 h-3 fill-white" viewBox="0 0 24 24"><path d="M18.926 23.568L1.432 18.061 5.074 1.432 22.568 6.939l-3.642 16.629zM8.034 10.354l2.121 6.579 6.579-2.121-2.121-6.579-6.579 2.121z" /></svg>
 );
 const DiscordIcon = () => (
-  <svg className="w-3 h-3 fill-white" viewBox="0 0 24 24"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037 19.736 19.736 0 0 0-4.885 1.515.069.069 0 0 0-.032.027C.533 9.048-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.125-.094.252-.192.37-.29a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.196.373.29a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.419-2.157 2.419zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.419-2.157 2.419z" /></svg>
+  <svg className="w-3 h-3 fill-white" viewBox="0 0 24 24"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037 19.736 19.736 0 0 0-4.885 1.515.069.069 0 0 0-.032.027C.533 9.048-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.125-.094.252-.192.37-.29a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.196.373.29a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.419-2.157 2.419zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.419-2.157 2.419z" /></svg>
 );
 const CodeIcon = () => (
   <svg className="w-3 h-3 fill-none stroke-white" viewBox="0 0 24 24" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" /></svg>
 );
 
 /**
- * 優化後的通用輪播組件
+ * 通用輪播組件
  */
 const CarouselLayer = ({ project, isSmall = false }: { project: Project, isSmall?: boolean }) => {
   const carouselControls = useAnimationControls();
@@ -159,6 +165,9 @@ const CarouselLayer = ({ project, isSmall = false }: { project: Project, isSmall
     setTimeout(() => setIsTransitioning(false), 300);
   };
 
+  // 輔助函式：檢查連結是否有效
+  const isValidUrl = (url?: string) => url && url !== "" && url !== "#";
+
   return (
     <div className="w-full h-full relative group font-['Montserrat',_sans-serif] bg-transparent rounded-sm overflow-hidden shadow-2xl">
       <AnimatePresence>
@@ -170,9 +179,16 @@ const CarouselLayer = ({ project, isSmall = false }: { project: Project, isSmall
             className="absolute top-4 right-4 z-[80] flex flex-row items-center gap-3 pointer-events-auto"
           >
             <div className="flex flex-row items-center gap-2.5 drop-shadow-md">
-              <a href={project.codeUrl} target="_blank" rel="noopener noreferrer" className="opacity-60 hover:opacity-100 transition-all transform hover:scale-110"><CodeIcon /></a>
-              <a href={project.robloxUrl} target="_blank" rel="noopener noreferrer" className="opacity-60 hover:opacity-100 transition-all transform hover:scale-110"><RobloxIcon /></a>
-              <a href={project.discordUrl} target="_blank" rel="noopener noreferrer" className="opacity-60 hover:opacity-100 transition-all transform hover:scale-110"><DiscordIcon /></a>
+              {/* 加入條件判斷，若無有效連結則不顯示圖標 */}
+              {isValidUrl(project.codeUrl) && (
+                <a href={project.codeUrl} target="_blank" rel="noopener noreferrer" className="opacity-60 hover:opacity-100 transition-all transform hover:scale-110"><CodeIcon /></a>
+              )}
+              {isValidUrl(project.robloxUrl) && (
+                <a href={project.robloxUrl} target="_blank" rel="noopener noreferrer" className="opacity-60 hover:opacity-100 transition-all transform hover:scale-110"><RobloxIcon /></a>
+              )}
+              {isValidUrl(project.discordUrl) && (
+                <a href={project.discordUrl} target="_blank" rel="noopener noreferrer" className="opacity-60 hover:opacity-100 transition-all transform hover:scale-110"><DiscordIcon /></a>
+              )}
             </div>
             <button onClick={closePanel} className="w-8 h-8 flex items-center justify-center bg-transparent text-white/60 hover:text-white transition-all cursor-pointer"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg></button>
           </motion.div>
@@ -193,7 +209,7 @@ const CarouselLayer = ({ project, isSmall = false }: { project: Project, isSmall
       <AnimatePresence>
         {isPanelOpen && (
           <>
-            {/* 修正：將毛玻璃層固定，不參與水平移動動畫，防止左側邊緣閃爍 */}
+            {/* 毛玻璃層 */}
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -201,7 +217,7 @@ const CarouselLayer = ({ project, isSmall = false }: { project: Project, isSmall
               className="absolute inset-0 z-[70] bg-transparent backdrop-blur-md pointer-events-none"
             />
             
-            {/* 文字內容層：僅在此處應用位移動畫 */}
+            {/* 文字內容層 */}
             <motion.div 
               initial={{ x: -20, opacity: 0 }} 
               animate={{ x: 0, opacity: 1 }} 
@@ -237,24 +253,22 @@ const CarouselLayer = ({ project, isSmall = false }: { project: Project, isSmall
 };
 
 export default function App() {
+  // 過濾啟用的專案
+  const enabledMainProjects = MAIN_PROJECTS.filter(p => p.enabled);
+  const enabledSmallProjects = SMALL_PROJECTS.filter(p => p.enabled);
+
   return (
-    <motion.div 
-      initial={{ opacity: 0 }} 
-      animate={{ opacity: 1 }} 
-      className="fixed inset-0 w-full h-screen overflow-y-auto bg-white flex flex-col items-center py-20 px-4"
-    >
+    <div className="fixed inset-0 w-full overflow-y-auto bg-white">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap');
         
-        /* 強制放開捲動權限 */
         html, body {
-          overflow: visible !important;
-          height: auto !important;
-          margin: 0 !important;
-          padding: 0 !important;
+          overflow: hidden;
+          height: 100%;
+          margin: 0;
+          padding: 0;
         }
 
-        /* 隱藏特定容器的捲動條但保留功能 */
         .no-scrollbar::-webkit-scrollbar {
           display: none;
         }
@@ -262,40 +276,55 @@ export default function App() {
           -ms-overflow-style: none;
           scrollbar-width: none;
         }
-
-        /* 針對伺服器環境的強制捲動條 */
-        * {
-          scrollbar-color: rgba(0,0,0,0.2) transparent;
-          scrollbar-width: thin;
-        }
       `}</style>
-      
-      {/* 內容容器：確保寬度並自然延伸高度 */}
-      <div className="w-full flex flex-col items-center flex-shrink-0">
-        
-        {/* 主專案列表 (Hero Cards) */}
-        <div className="w-full flex flex-col items-center gap-12 mb-12">
-          {MAIN_PROJECTS.map(project => (
-            <div key={project.id} className="w-[95%] max-w-4xl aspect-video flex-shrink-0">
-              <CarouselLayer project={project} />
+
+      <motion.div 
+        initial={{ opacity: 0 }} 
+        animate={{ opacity: 1 }} 
+        className="flex flex-col items-center justify-center min-h-full w-full px-4"
+      >
+        {/* 修正：將 py-20 內距放在內部容器，避免在內容較少時強制觸發外層捲動 */}
+        <div className="w-full flex flex-col items-center flex-shrink-0 py-20">
+          
+          {/* 主專案列表 (Hero Cards) */}
+          {enabledMainProjects.length > 0 && (
+            <div className="w-full flex flex-col items-center gap-12">
+              {enabledMainProjects.map(project => (
+                <div key={project.id} className="w-[95%] max-w-4xl aspect-video flex-shrink-0">
+                  <CarouselLayer project={project} />
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          )}
 
-        {/* 小型專案區塊 (Small Projects Row) */}
-        <div className="w-[95%] max-w-4xl grid grid-cols-1 md:grid-cols-4 gap-6 h-auto md:h-[320px] mb-20 flex-shrink-0">
-          <div className="md:col-span-1 h-[320px] md:h-full">
-            <CarouselLayer project={SMALL_PROJECTS[0]} isSmall={true} />
-          </div>
-          <div className="md:col-span-1 h-[320px] md:h-full">
-            <CarouselLayer project={SMALL_PROJECTS[1]} isSmall={true} />
-          </div>
-          <div className="md:col-span-2 h-[320px] md:h-full">
-            <CarouselLayer project={SMALL_PROJECTS[2]} isSmall={false} />
-          </div>
-        </div>
+          {/* 小型專案區塊 - 僅在有啟用專案時顯示 */}
+          {enabledSmallProjects.length > 0 && (
+            <div className={`w-[95%] max-w-4xl grid grid-cols-1 md:grid-cols-4 gap-6 h-auto md:h-[320px] flex-shrink-0 ${enabledMainProjects.length > 0 ? 'mt-12' : ''}`}>
+              {enabledSmallProjects[0] && (
+                <div className="md:col-span-1 h-[320px] md:h-full">
+                  <CarouselLayer project={enabledSmallProjects[0]} isSmall={true} />
+                </div>
+              )}
+              {enabledSmallProjects[1] && (
+                <div className="md:col-span-1 h-[320px] md:h-full">
+                  <CarouselLayer project={enabledSmallProjects[1]} isSmall={true} />
+                </div>
+              )}
+              {enabledSmallProjects[2] && (
+                <div className="md:col-span-2 h-[320px] md:h-full">
+                  <CarouselLayer project={enabledSmallProjects[2]} isSmall={false} />
+                </div>
+              )}
+            </div>
+          )}
 
-      </div>
-    </motion.div>
+          {/* 若完全沒有啟用的專案 */}
+          {enabledMainProjects.length === 0 && enabledSmallProjects.length === 0 && (
+            <div className="text-gray-400 font-['Montserrat']">No projects are currently enabled.</div>
+          )}
+
+        </div>
+      </motion.div>
+    </div>
   );
 }
