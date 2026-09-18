@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Skybox Cubemap Splitter</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Montserrat", sans-serif;
+      background-color: #000000;
+      color: #ffffff;
+      -webkit-font-smoothing: antialiased;
+    }
+    .icon-action-btn {
+      background: transparent !important;
+      color: #ffffff;
+      border: none;
+      outline: none;
+      padding: 0.5rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.72;
+      cursor: pointer;
+      transition: opacity 0.18s ease, transform 0.18s ease;
+    }
+    .icon-action-btn:hover {
+      opacity: 1;
+      transform: scale(1.1);
+    }
+    .icon-action-btn:active {
+      transform: scale(0.92);
+    }
+    canvas {
+      display: block;
+      width: 100% !important;
+      height: 100% !important;
+      outline: none;
+      user-select: none;
+    }
+  </style>
+</head>
+<body class="w-screen h-screen m-0 p-0 overflow-hidden select-none bg-neutral-900">
+
+  <!-- Hidden File Input (triggered by upload button, double-click, or drag/drop) -->
+  <input type="file" id="fileInput" accept="image/*" class="hidden" />
+
+  <!-- Fullscreen 3D Skybox Viewport -->
+  <main class="w-full h-full relative overflow-hidden">
+    <div id="threeContainer" class="w-full h-full cursor-grab active:cursor-grabbing" title="Drag to look around. Paste (Ctrl+V) or use buttons to upload."></div>
+
+    <!-- Transparent interactive action buttons in bottom right -->
+    <div class="absolute bottom-6 right-6 flex items-center gap-3 z-20">
+      <!-- Transparent Upload Button -->
+      <button 
+        id="uploadBtn"
+        type="button"
+        class="icon-action-btn"
+        title="Upload or paste new image (Ctrl+V)"
+        aria-label="Upload or paste new image"
+      >
+        <!-- Upload Icon -->
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+          <path stroke-linecap="square" stroke-linejoin="miter" d="M4 16v4h16v-4" />
+          <path stroke-linecap="square" stroke-linejoin="miter" d="M12 4v11m0-11L8 8m4-4l4 4" />
+        </svg>
+      </button>
+
+      <!-- Transparent Download All in Folder Button -->
+      <button 
+        id="downloadAllBtn"
+        type="button"
+        class="icon-action-btn"
+        title="Download All Faces in Folder"
+        aria-label="Download All Faces in Folder"
+      >
+        <!-- Folder Download Icon -->
+        <svg id="btnIcon" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+          <path stroke-linecap="square" stroke-linejoin="miter" d="M3 7v13h18V7H12l-2-2H3v2z" />
+          <path stroke-linecap="square" stroke-linejoin="miter" d="M12 10v6m0 0l-2.5-2.5M12 16l2.5-2.5" />
+        </svg>
+      </button>
+    </div>
+  </main>
+
+  <script>
+    const facesOrder = [
+      { id: 'Ft' },
+      { id: 'Bk' },
+      { id: 'Lf' },
+      { id: 'Rt' },
+      { id: 'Up' },
+      { id: 'Dn' }
+    ];
+
+    let cutFaceCanvases = {};
+    let scene, camera, renderer, controls, sphereMesh;
+
+    const fileInput = document.getElementById('fileInput');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const downloadAllBtn = document.getElementById('downloadAllBtn');
+    const btnIcon = document.getElementById('btnIcon');
+    const threeContainer = document.getElementById('threeContainer');
+
+    function initThree() {
+      if (renderer) return;
+
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(70, width / height, 0.1, 2000);
+      camera.position.set(0, 0, 0.1);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      threeContainer.appendChild(renderer.domElement);
+
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableZoom = true;
+      controls.enablePan = false;
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.08;
+      controls.rotateSpeed = -0.28;
+      controls.minDistance = 0.05;
+      controls.maxDistance = 0.15;
+
+      // Smooth zoom via field of view
+      renderer.domElement.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const zoomDelta = e.deltaY * 0.04;
+        camera.fov = Math.max(35, Math.min(95, camera.fov + zoomDelta));
+        camera.updateProjectionMatrix();
+      }, { passive: false });
+
+      // Inverted spherical mesh for panoramic viewing
+      const sphereGeo = new THREE.SphereGeometry(100, 64, 64);
+      sphereGeo.scale(-1, 1, 1);
+      const defaultMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
+      sphereMesh = new THREE.Mesh(sphereGeo, defaultMat);
+      scene.add(sphereMesh);
+
+      function animate() {
+        requestAnimationFrame(animate);
+        controls.update();
+        renderer.render(scene, camera);
+      }
+      animate();
+
+      window.addEventListener('resize', () => {
+        if (!renderer) return;
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h);
+      });
+    }
+
+    function updateSkyboxView(sourceImg, isEqui) {
+      if (!scene) initThree();
+
+      if (isEqui) {
+        const texture = new THREE.Texture(sourceImg);
+        texture.generateMipmaps = true;
+        texture.minFilter = THREE.LinearMipmapLinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.ClampToEdgeWrapping;
+        texture.needsUpdate = true;
+
+        sphereMesh.visible = true;
+        scene.background = null;
+        sphereMesh.material = new THREE.MeshBasicMaterial({ map: texture });
+      } else {
+        if (!cutFaceCanvases['Ft']) return;
+        const cubeTexture = new THREE.CubeTexture([
+          cutFaceCanvases['Rt'],
+          cutFaceCanvases['Lf'],
+          cutFaceCanvases['Up'],
+          cutFaceCanvases['Dn'],
+          cutFaceCanvases['Bk'],
+          cutFaceCanvases['Ft']
+        ]);
+        cubeTexture.generateMipmaps = true;
+        cubeTexture.minFilter = THREE.LinearMipmapLinearFilter;
+        cubeTexture.needsUpdate = true;
+
+        sphereMesh.visible = false;
+        scene.background = cubeTexture;
+      }
+    }
+
+    function resolveLayout(img) {
+      const w = img.naturalWidth || img.width;
+      const h = img.naturalHeight || img.height;
+      const aspect = w / h;
+
+      if (Math.abs(aspect - 2.0) < 0.25) return 'equirectangular';
+      if (Math.abs(aspect - (4 / 3)) < 0.15) return 'cross_h';
+      if (Math.abs(aspect - (3 / 4)) < 0.15) return 'cross_v';
+      if (Math.abs(aspect - 6.0) < 0.3) return 'strip_h';
+      if (Math.abs(aspect - (1 / 6)) < 0.05) return 'strip_v';
+      if (Math.abs(aspect - (3 / 2)) < 0.2) return 'grid_3x2';
+
+      return 'equirectangular';
+    }
+
+    function extractCubemapFromEquirectangular(img) {
+      const srcW = img.naturalWidth || img.width;
+      const srcH = img.naturalHeight || img.height;
+      const targetSize = Math.min(1024, Math.max(256, Math.floor(srcW / 4)));
+
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = srcW;
+      tempCanvas.height = srcH;
+      const tempCtx = tempCanvas.getContext('2d');
+      tempCtx.drawImage(img, 0, 0);
+      const srcData = tempCtx.getImageData(0, 0, srcW, srcH).data;
+
+      const faces = ['Ft', 'Bk', 'Lf', 'Rt', 'Up', 'Dn'];
+      const resultCanvases = {};
+
+      faces.forEach(faceId => {
+        const faceCanvas = document.createElement('canvas');
+        faceCanvas.width = targetSize;
+        faceCanvas.height = targetSize;
+        const faceCtx = faceCanvas.getContext('2d');
+        const faceImageData = faceCtx.createImageData(targetSize, targetSize);
+        const data = faceImageData.data;
+
+        for (let y = 0; y < targetSize; y++) {
+          for (let x = 0; x < targetSize; x++) {
+            const nx = (x + 0.5) / targetSize * 2 - 1;
+            const ny = -((y + 0.5) / targetSize * 2 - 1);
+
+            let vx = 0, vy = 0, vz = 0;
+            switch (faceId) {
+              case 'Ft': vx = nx; vy = ny; vz = -1; break;
+              case 'Bk': vx = -nx; vy = ny; vz = 1; break;
+              case 'Lf': vx = -1; vy = ny; vz = -nx; break;
+              case 'Rt': vx = 1; vy = ny; vz = nx; break;
+              case 'Up': vx = nx; vy = 1; vz = ny; break;
+              case 'Dn': vx = nx; vy = -1; vz = -ny; break;
+            }
+
+            const len = Math.sqrt(vx * vx + vy * vy + vz * vz);
+            vx /= len; vy /= len; vz /= len;
+
+            const theta = Math.atan2(vx, -vz);
+            const phi = Math.asin(Math.max(-1, Math.min(1, vy)));
+
+            const u = (theta + Math.PI) / (2 * Math.PI);
+            const v = (0.5 - phi / Math.PI);
+
+            const sx = Math.floor(u * srcW) % srcW;
+            const sy = Math.max(0, Math.min(srcH - 1, Math.floor(v * srcH)));
+
+            const srcIdx = (sy * srcW + sx) * 4;
+            const destIdx = (y * targetSize + x) * 4;
+
+            data[destIdx] = srcData[srcIdx];
+            data[destIdx + 1] = srcData[srcIdx + 1];
+            data[destIdx + 2] = srcData[srcIdx + 2];
+            data[destIdx + 3] = 255;
+          }
+        }
+
+        faceCtx.putImageData(faceImageData, 0, 0);
+        resultCanvases[faceId] = faceCanvas;
+      });
+
+      return resultCanvases;
+    }
+
+    function getFaceCoordinates(layout, totalW, totalH) {
+      const coords = {};
+      if (layout === 'cross_h') {
+        const size = totalW / 4;
+        coords['Up'] = { x: 1 * size, y: 0 * size, size };
+        coords['Lf'] = { x: 0 * size, y: 1 * size, size };
+        coords['Ft'] = { x: 1 * size, y: 1 * size, size };
+        coords['Rt'] = { x: 2 * size, y: 1 * size, size };
+        coords['Bk'] = { x: 3 * size, y: 1 * size, size };
+        coords['Dn'] = { x: 1 * size, y: 2 * size, size };
+      } else if (layout === 'cross_v') {
+        const size = totalW / 3;
+        coords['Up'] = { x: 1 * size, y: 0 * size, size };
+        coords['Lf'] = { x: 0 * size, y: 1 * size, size };
+        coords['Ft'] = { x: 1 * size, y: 1 * size, size };
+        coords['Rt'] = { x: 2 * size, y: 1 * size, size };
+        coords['Dn'] = { x: 1 * size, y: 2 * size, size };
+        coords['Bk'] = { x: 1 * size, y: 3 * size, size };
+      } else if (layout === 'strip_h') {
+        const size = totalH;
+        coords['Rt'] = { x: 0 * size, y: 0, size };
+        coords['Lf'] = { x: 1 * size, y: 0, size };
+        coords['Up'] = { x: 2 * size, y: 0, size };
+        coords['Dn'] = { x: 3 * size, y: 0, size };
+        coords['Ft'] = { x: 4 * size, y: 0, size };
+        coords['Bk'] = { x: 5 * size, y: 0, size };
+      } else if (layout === 'strip_v') {
+        const size = totalW;
+        coords['Rt'] = { x: 0, y: 0 * size, size };
+        coords['Lf'] = { x: 0, y: 1 * size, size };
+        coords['Up'] = { x: 0, y: 2 * size, size };
+        coords['Dn'] = { x: 0, y: 3 * size, size };
+        coords['Ft'] = { x: 0, y: 4 * size, size };
+        coords['Bk'] = { x: 0, y: 5 * size, size };
+      } else if (layout === 'grid_3x2') {
+        const size = totalW / 3;
+        coords['Lf'] = { x: 0 * size, y: 0 * size, size };
+        coords['Ft'] = { x: 1 * size, y: 0 * size, size };
+        coords['Rt'] = { x: 2 * size, y: 0 * size, size };
+        coords['Bk'] = { x: 0 * size, y: 1 * size, size };
+        coords['Up'] = { x: 1 * size, y: 1 * size, size };
+        coords['Dn'] = { x: 2 * size, y: 1 * size, size };
+      }
+      return coords;
+    }
+
+    function processImage(img) {
+      const w = img.naturalWidth || img.width;
+      const h = img.naturalHeight || img.height;
+      const chosenLayout = resolveLayout(img);
+      const isEqui = (chosenLayout === 'equirectangular');
+
+      cutFaceCanvases = {};
+
+      if (isEqui) {
+        cutFaceCanvases = extractCubemapFromEquirectangular(img);
+      } else {
+        const coords = getFaceCoordinates(chosenLayout, w, h);
+        facesOrder.forEach(face => {
+          const c = coords[face.id];
+          if (!c) return;
+
+          const faceCanvas = document.createElement('canvas');
+          faceCanvas.width = Math.round(c.size);
+          faceCanvas.height = Math.round(c.size);
+          const ctx = faceCanvas.getContext('2d');
+
+          ctx.drawImage(
+            img,
+            Math.round(c.x), Math.round(c.y), Math.round(c.size), Math.round(c.size),
+            0, 0, faceCanvas.width, faceCanvas.height
+          );
+
+          cutFaceCanvases[face.id] = faceCanvas;
+        });
+      }
+
+      initThree();
+      updateSkyboxView(img, isEqui);
+    }
+
+    async function downloadAllFaces() {
+      const faces = ['Ft', 'Bk', 'Lf', 'Rt', 'Up', 'Dn'];
+      if (!cutFaceCanvases['Ft']) return;
+
+      const zip = new JSZip();
+      const folder = zip.folder('skybox');
+
+      faces.forEach(faceId => {
+        const canvas = cutFaceCanvases[faceId];
+        if (canvas) {
+          const dataUrl = canvas.toDataURL('image/png');
+          const base64Data = dataUrl.replace(/^data:image\/png;base64,/, '');
+          folder.file(`${faceId}.png`, base64Data, { base64: true });
+        }
+      });
+
+      // Quick icon transition to checkmark feedback
+      btnIcon.innerHTML = `<path stroke-linecap="square" stroke-linejoin="miter" d="M5 13l4 4L19 7" />`;
+      setTimeout(() => {
+        btnIcon.innerHTML = `
+          <path stroke-linecap="square" stroke-linejoin="miter" d="M3 7v13h18V7H12l-2-2H3v2z" />
+          <path stroke-linecap="square" stroke-linejoin="miter" d="M12 10v6m0 0l-2.5-2.5M12 16l2.5-2.5" />
+        `;
+      }, 1400);
+
+      const content = await zip.generateAsync({ type: 'blob' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(content);
+      link.download = 'skybox.zip';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    uploadBtn.addEventListener('click', () => fileInput.click());
+    downloadAllBtn.addEventListener('click', downloadAllFaces);
+
+    // Double click viewport to open file picker as well
+    threeContainer.addEventListener('dblclick', () => fileInput.click());
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        loadFile(e.target.files[0]);
+      }
+    });
+
+    // Global paste handler supporting copied image data from clipboard (Ctrl+V / Cmd+V)
+    window.addEventListener('paste', (e) => {
+      const clipboardData = e.clipboardData || window.clipboardData;
+      if (!clipboardData || !clipboardData.items) return;
+
+      for (let i = 0; i < clipboardData.items.length; i++) {
+        if (clipboardData.items[i].type.startsWith('image/')) {
+          const file = clipboardData.items[i].getAsFile();
+          if (file) {
+            e.preventDefault();
+            loadFile(file);
+            return;
+          }
+        }
+      }
+    });
+
+    window.addEventListener('dragover', (e) => e.preventDefault());
+    window.addEventListener('drop', (e) => {
+      e.preventDefault();
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        loadFile(e.dataTransfer.files[0]);
+      }
+    });
+
+    function loadFile(file) {
+      if (!file.type.startsWith('image/')) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => processImage(img);
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function loadDefaultSample() {
+      const sampleCanvas = document.createElement('canvas');
+      const w = 1024;
+      const h = 512;
+      sampleCanvas.width = w;
+      sampleCanvas.height = h;
+      const ctx = sampleCanvas.getContext('2d');
+
+      // Soft natural sky-to-earth gradient
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, h);
+      skyGrad.addColorStop(0, '#0d131f');
+      skyGrad.addColorStop(0.48, '#708297');
+      skyGrad.addColorStop(0.5, '#eaeef2');
+      skyGrad.addColorStop(0.52, '#9eaab7');
+      skyGrad.addColorStop(1, '#1b222d');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, w, h);
+
+      // Subtle celestial glow
+      const radial = ctx.createRadialGradient(w * 0.5, h * 0.35, 5, w * 0.5, h * 0.35, 120);
+      radial.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+      radial.addColorStop(0.3, 'rgba(255, 255, 255, 0.4)');
+      radial.addColorStop(1, 'rgba(255, 255, 255, 0)');
+      ctx.fillStyle = radial;
+      ctx.beginPath();
+      ctx.arc(w * 0.5, h * 0.35, 120, 0, Math.PI * 2);
+      ctx.fill();
+
+      const defaultImg = new Image();
+      defaultImg.onload = () => processImage(defaultImg);
+      defaultImg.src = sampleCanvas.toDataURL('image/png');
+    }
+
+    window.addEventListener('DOMContentLoaded', loadDefaultSample);
+  </script>
+</body>
+</html>

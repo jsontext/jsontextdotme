@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Monochrome Gradient Flow</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #fbfbfb;
+    }
+
+    /* Full-viewport canvas covering entire display */
+    #gl-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      display: block;
+      touch-action: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- Strictly the canvas with no text, HUD, or overlays -->
+  <canvas id="gl-canvas"></canvas>
+
+  <script>
+    // Vertex Shader: Maps a full-screen viewport quad
+    const vsSource = `
+      attribute vec2 a_position;
+      varying vec2 v_uv;
+      void main() {
+        v_uv = (a_position + 1.0) * 0.5;
+        gl_Position = vec4(a_position, 0.0, 1.0);
+      }
+    `;
+
+    // Fragment Shader: Pure 2D water wave flow under a tactile paper-like material
+    const fsSource = `
+      precision highp float;
+      varying vec2 v_uv;
+
+      uniform vec2 u_resolution;
+      uniform float u_time;
+      uniform vec2 u_mouse;
+      uniform float u_mouse_speed;
+
+      // Hash function for static paper grain
+      float hash(vec2 p) {
+        vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+        p3 += dot(p3, p3.yzx + 33.33);
+        return fract((p3.x + p3.y) * p3.z);
+      }
+
+      // Smooth value noise for paper pulp variation
+      float snoise(vec2 p) {
+        vec2 i = floor(p);
+        vec2 f = fract(p);
+        vec2 u = f * f * (3.0 - 2.0 * f);
+        return mix(
+          mix(hash(i + vec2(0.0, 0.0)), hash(i + vec2(1.0, 0.0)), u.x),
+          mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x),
+          u.y
+        );
+      }
+
+      // Procedural tactile paper texture (anchored to physical screen coordinates)
+      float getPaperTexture(vec2 coord) {
+        // 1. Fine tooth / cold-press grain (micro scale)
+        float tooth = hash(coord * 0.85) * 0.5 + hash(coord * 1.73 + 31.7) * 0.5;
+
+        // 2. Paper pulp mottling / formation (medium scale organic variation)
+        float pulp = snoise(coord * 0.02) * 0.6 + snoise(coord * 0.05 + 13.5) * 0.4;
+
+        // 3. Cellulose micro-fibers (subtle, delicate directional thread specks)
+        vec2 f1 = vec2(coord.x * 0.7 + coord.y * 0.7, coord.y * 0.7 - coord.x * 0.7);
+        float fiber1 = hash(floor(f1 * vec2(0.08, 0.92)));
+        float fiberMask1 = smoothstep(0.965, 0.998, fiber1);
+
+        vec2 f2 = vec2(coord.x * -0.6 + coord.y * 0.8, coord.y * -0.6 - coord.x * 0.8);
+        float fiber2 = hash(floor(f2 * vec2(0.90, 0.10)) + 71.3);
+        float fiberMask2 = smoothstep(0.965, 0.998, fiber2);
+
+        // Combined paper surface relief
+        float paperRelief = (tooth - 0.5) * 0.038 + (pulp - 0.5) * 0.022 - (fiberMask1 + fiberMask2) * 0.024;
+        return paperRelief;
+      }
+
+      void main() {
+        // Normalized 2D coordinates preserving uniform aspect ratio
+        vec2 p = (gl_FragCoord.xy * 2.0 - u_resolution) / min(u_resolution.x, u_resolution.y);
+
+        // Gentle, calm water flow clock
+        float t = u_time * 0.28;
+
+        // Subdued interactive water ripple from pointer
+        vec2 m = (u_mouse * 2.0 - u_resolution) / min(u_resolution.x, u_resolution.y);
+        float distToMouse = length(p - m);
+        float mouseRipple = sin(distToMouse * 14.0 - t * 3.2) * exp(-distToMouse * 2.8) * 0.045;
+
+        // Wide, gentle water surface coordinate drift (laminar motion)
+        vec2 waveCoord = p * 1.1;
+        waveCoord.x += sin(waveCoord.y * 1.3 + t * 0.5) * 0.25;
+        waveCoord.y += cos(waveCoord.x * 1.1 + t * 0.45) * 0.25;
+
+        // Harmonious water wave superposition across soft planar angles
+        float w1 = sin(dot(waveCoord, vec2(0.90,  0.42)) * 2.4 + t * 0.8);
+        float w2 = sin(dot(waveCoord, vec2(-0.65, 0.76)) * 2.0 - t * 0.7);
+        float w3 = sin(dot(waveCoord, vec2(0.35, -0.94)) * 3.0 + t * 0.9);
+        float w4 = cos(dot(waveCoord, vec2(-0.82, -0.57)) * 1.6 + t * 0.6);
+
+        // Combined subtle liquid elevation (normalized 0.0 to 1.0)
+        float waterHeight = (w1 * 0.38 + w2 * 0.32 + w3 * 0.18 + w4 * 0.12);
+        waterHeight += mouseRipple * (0.3 + u_mouse_speed * 0.8);
+        waterHeight = waterHeight * 0.5 + 0.5;
+
+        // Ultra-smooth broad transition across fluid currents
+        float flow = smoothstep(0.08, 0.92, waterHeight);
+
+        // Whisper-subtle monochrome palette
+        vec3 cDarkGray = vec3(0.910, 0.915, 0.922); // Barely-there graphite gray
+        vec3 cMidGray  = vec3(0.952, 0.955, 0.958); // Soft whisper gray
+        vec3 cWhite    = vec3(0.994, 0.996, 0.998); // Pure crisp crest white
+
+        // Flat, silky gradient transitions
+        vec3 col = mix(cDarkGray, cMidGray, smoothstep(0.0, 0.5, flow));
+        col = mix(col, cWhite, smoothstep(0.5, 1.0, flow));
+
+        // Tactile paper-like material layer (anchored to viewport pixels)
+        float paper = getPaperTexture(gl_FragCoord.xy);
+        col += vec3(paper);
+
+        // Microscopic anti-banding dither
+        float dither = (fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453) - 0.5) * (0.6 / 255.0);
+        col += dither;
+
+        gl_FragColor = vec4(col, 1.0);
+      }
+    `;
+
+    (function () {
+      const canvas = document.getElementById('gl-canvas');
+      const gl = canvas.getContext('webgl', { antialias: true, alpha: false });
+
+      if (!gl) {
+        document.body.style.background = '#fbfbfb';
+        return;
+      }
+
+      function createShader(gl, type, source) {
+        const shader = gl.createShader(type);
+        gl.shaderSource(shader, source);
+        gl.compileShader(shader);
+        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+          gl.deleteShader(shader);
+          return null;
+        }
+        return shader;
+      }
+
+      const vertexShader = createShader(gl, gl.VERTEX_SHADER, vsSource);
+      const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fsSource);
+
+      const program = gl.createProgram();
+      gl.attachShader(program, vertexShader);
+      gl.attachShader(program, fragmentShader);
+      gl.linkProgram(program);
+
+      if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        return;
+      }
+
+      gl.useProgram(program);
+
+      // Full-screen quad buffer
+      const positionBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+      gl.bufferData(
+        gl.ARRAY_BUFFER,
+        new Float32Array([
+          -1.0, -1.0,
+           1.0, -1.0,
+          -1.0,  1.0,
+          -1.0,  1.0,
+           1.0, -1.0,
+           1.0,  1.0,
+        ]),
+        gl.STATIC_DRAW
+      );
+
+      const positionLocation = gl.getAttribLocation(program, 'a_position');
+      gl.enableVertexAttribArray(positionLocation);
+      gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
+
+      // Uniform pointers
+      const uResLoc = gl.getUniformLocation(program, 'u_resolution');
+      const uTimeLoc = gl.getUniformLocation(program, 'u_time');
+      const uMouseLoc = gl.getUniformLocation(program, 'u_mouse');
+      const uMouseSpeedLoc = gl.getUniformLocation(program, 'u_mouse_speed');
+
+      let targetMouseX = window.innerWidth * 0.5;
+      let targetMouseY = window.innerHeight * 0.5;
+      let smoothMouseX = targetMouseX;
+      let smoothMouseY = targetMouseY;
+      let prevMouseX = targetMouseX;
+      let prevMouseY = targetMouseY;
+      let mouseSpeed = 0.0;
+
+      function resize() {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+
+        canvas.width = Math.floor(w * dpr);
+        canvas.height = Math.floor(h * dpr);
+        canvas.style.width = w + 'px';
+        canvas.style.height = h + 'px';
+
+        gl.viewport(0, 0, canvas.width, canvas.height);
+        gl.uniform2f(uResLoc, canvas.width, canvas.height);
+      }
+
+      window.addEventListener('resize', resize, { passive: true });
+      resize();
+
+      function onPointerMove(x, y) {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        targetMouseX = x * dpr;
+        targetMouseY = (window.innerHeight - y) * dpr;
+      }
+
+      window.addEventListener('mousemove', (e) => {
+        onPointerMove(e.clientX, e.clientY);
+      }, { passive: true });
+
+      window.addEventListener('touchmove', (e) => {
+        if (e.touches && e.touches[0]) {
+          onPointerMove(e.touches[0].clientX, e.touches[0].clientY);
+        }
+      }, { passive: true });
+
+      const startTime = performance.now();
+
+      function render(now) {
+        const elapsed = (now - startTime) * 0.001;
+
+        // Smooth physical water damping for pointer motion
+        smoothMouseX += (targetMouseX - smoothMouseX) * 0.06;
+        smoothMouseY += (targetMouseY - smoothMouseY) * 0.06;
+
+        // Calculate velocity of pointer disturbance on the water surface
+        const dx = targetMouseX - prevMouseX;
+        const dy = targetMouseY - prevMouseY;
+        const instantSpeed = Math.min(Math.sqrt(dx * dx + dy * dy) * 0.015, 1.0);
+        mouseSpeed += (instantSpeed - mouseSpeed) * 0.1;
+        prevMouseX = targetMouseX;
+        prevMouseY = targetMouseY;
+
+        gl.uniform1f(uTimeLoc, elapsed);
+        gl.uniform2f(uMouseLoc, smoothMouseX, smoothMouseY);
+        gl.uniform1f(uMouseSpeedLoc, mouseSpeed);
+
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
+        requestAnimationFrame(render);
+      }
+
+      requestAnimationFrame(render);
+    })();
+  </script>
+</body>
+</html>

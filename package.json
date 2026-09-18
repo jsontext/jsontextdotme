@@ -1,13 +1,10 @@
 ﻿{
   "name": "jsontext-me",
   "version": "1.0.0",
-  "description": "Local test server for jsontext.me",
-  "main": "server.js",
+  "description": "Website for jsontext.me",
   "scripts": {
+    "build": "node build.js",
     "start": "node server.js",
     "dev": "node server.js"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC"
+  }
 }
