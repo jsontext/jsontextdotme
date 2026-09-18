@@ -4,7 +4,9 @@
   "description": "Website for jsontext.me",
   "scripts": {
     "build": "node build.js",
+    "push": "node build.js && git add -A && git commit -m \"Update site\" && git push origin main && git push origin cloudflare/workers-autoconfig",
     "deploy": "wrangler deploy",
-    "preview": "wrangler dev"
+    "preview": "wrangler dev",
+    "start": "node server.js"
   }
 }
