@@ -1,4 +1,4 @@
-﻿const fs = require('fs');
+const fs = require('fs');
 const path = require('path');
 
 const distDir = path.join(__dirname, 'dist');
@@ -15,4 +15,4 @@ fs.copyFileSync(path.join(__dirname, 'jsontext.me.html'), path.join(distDir, 'in
 fs.copyFileSync(path.join(__dirname, 'jsontext.me-skybox.html'), path.join(distDir, 'skybox.html'));
 fs.copyFileSync(path.join(__dirname, 'jsontext.me-skybox.html'), path.join(skyboxDir, 'index.html'));
 
-console.log('Build completed successfully: dist folder prepared for Cloudflare Pages.');
+console.log('Build completed: dist directory created.');

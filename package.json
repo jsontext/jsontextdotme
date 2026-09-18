@@ -1,10 +1,10 @@
-﻿{
-  "name": "jsontext-me",
+{
+  "name": "jsontext",
   "version": "1.0.0",
   "description": "Website for jsontext.me",
   "scripts": {
     "build": "node build.js",
-    "start": "node server.js",
-    "dev": "node server.js"
+    "deploy": "wrangler deploy",
+    "preview": "wrangler dev"
   }
 }
