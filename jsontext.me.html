@@ -30,11 +30,75 @@
       display: block;
       touch-action: none;
     }
+
+    /* Verification overlay: hidden unless ?t=TOKEN or ?verify=success is present */
+    #verify-ui {
+      position: absolute;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(251, 251, 251, 0.72);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+    }
+
+    #verify-ui.is-visible {
+      display: flex;
+    }
+
+    .verify-card {
+      width: 100%;
+      max-width: 380px;
+      text-align: center;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #2c2c2c;
+    }
+
+    .verify-card h1 {
+      font-size: 17px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      margin-bottom: 10px;
+    }
+
+    .verify-card p {
+      font-size: 13.5px;
+      line-height: 1.6;
+      color: #5a5a5a;
+      margin-bottom: 20px;
+    }
+
+    .verify-btn {
+      display: inline-block;
+      padding: 11px 22px;
+      font-size: 13.5px;
+      font-weight: 500;
+      color: #fbfbfb;
+      background: #2c2c2c;
+      border-radius: 8px;
+      text-decoration: none;
+      transition: opacity 0.15s ease;
+    }
+
+    .verify-btn:hover {
+      opacity: 0.85;
+    }
   </style>
 </head>
 <body>
   <!-- Strictly the canvas with no text, HUD, or overlays -->
   <canvas id="gl-canvas"></canvas>
+
+  <!-- Verification overlay: only revealed by the script below when a token or result is present -->
+  <div id="verify-ui">
+    <div class="verify-card">
+      <h1 id="verify-title">Verification</h1>
+      <p id="verify-text">Link your Roblox account to get access to the Discord server.</p>
+      <a id="verify-action" class="verify-btn" href="#" hidden>Verify with Roblox</a>
+    </div>
+  </div>
 
   <script>
     // Vertex Shader: Maps a full-screen viewport quad
@@ -277,6 +341,33 @@
       }
 
       requestAnimationFrame(render);
+    })();
+  </script>
+
+  <script>
+    (function () {
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get('t');
+      const result = params.get('verify');
+      if (!token && result !== 'success') return;
+
+      const ui = document.getElementById('verify-ui');
+      const title = document.getElementById('verify-title');
+      const text = document.getElementById('verify-text');
+      const action = document.getElementById('verify-action');
+
+      if (result === 'success') {
+        const username = params.get('username');
+        title.textContent = 'Verified';
+        text.textContent = username
+          ? 'Your Roblox account (' + username + ') is linked. You now have access.'
+          : 'Your Roblox account is linked. You now have access.';
+      } else {
+        action.href = '/verify?t=' + encodeURIComponent(token);
+        action.hidden = false;
+      }
+
+      ui.classList.add('is-visible');
     })();
   </script>
 </body>

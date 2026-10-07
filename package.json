@@ -8,5 +8,8 @@
     "deploy": "wrangler deploy",
     "preview": "wrangler dev",
     "start": "node server.js"
+  },
+  "devDependencies": {
+    "wrangler": "^4.148.0"
   }
 }
