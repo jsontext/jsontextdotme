@@ -16,6 +16,9 @@ export default {
       if (url.pathname === "/callback") {
         return await handleCallback(url, env);
       }
+      if (url.pathname === "/discord" && request.method === "POST") {
+        return await handleDiscord(request, env);
+      }
     } catch (err) {
       console.error("verify flow error", err && err.stack ? err.stack : err);
       return errorPage("Something went wrong. Please try again or contact staff.");
@@ -131,6 +134,93 @@ async function grantRole(discordId, env) {
   const detail = await res.text();
   console.error("role grant failed", res.status, detail);
   return { ok: false, message: "Could not grant your role. Contact staff." };
+}
+
+async function handleDiscord(request, env) {
+  const signature = request.headers.get("x-signature-ed25519");
+  const timestamp = request.headers.get("x-signature-timestamp");
+  const body = await request.text();
+
+  const valid = await verifyDiscordSignature(env.DISCORD_PUBLIC_KEY, signature, timestamp, body);
+  if (!valid) {
+    return new Response("invalid request signature", { status: 401 });
+  }
+
+  let interaction;
+  try {
+    interaction = JSON.parse(body);
+  } catch {
+    return jsonResponse({ error: "bad request" }, 400);
+  }
+
+  if (interaction.type === 1) {
+    return jsonResponse({ type: 1 });
+  }
+
+  if (interaction.type === 2 && interaction.data && interaction.data.name === "verify") {
+    const userId =
+      (interaction.member && interaction.member.user && interaction.member.user.id) ||
+      (interaction.user && interaction.user.id);
+
+    if (!userId) {
+      return jsonResponse({ type: 4, data: { content: "Could not read your Discord user ID.", flags: 64 } });
+    }
+
+    const token = await createToken({ d: userId }, env.HMAC_SECRET);
+    const origin = new URL(request.url).origin;
+    const link = `${origin}/?t=${token}`;
+
+    return jsonResponse({
+      type: 4,
+      data: {
+        content: `**Verify your Roblox account**\n[Click here to verify](${link})\n\nThis link expires in 15 minutes.`,
+        flags: 64,
+      },
+    });
+  }
+
+  return jsonResponse({ type: 4, data: { content: "Unknown command.", flags: 64 } });
+}
+
+async function verifyDiscordSignature(publicKeyHex, signatureHex, timestamp, body) {
+  if (!publicKeyHex || !signatureHex || !timestamp) return false;
+  try {
+    const key = await crypto.subtle.importKey(
+      "raw",
+      hexToBytes(publicKeyHex),
+      { name: "Ed25519" },
+      false,
+      ["verify"]
+    );
+    return await crypto.subtle.verify(
+      { name: "Ed25519" },
+      key,
+      hexToBytes(signatureHex),
+      new TextEncoder().encode(timestamp + body)
+    );
+  } catch (err) {
+    console.error("discord signature verify error", err && err.message ? err.message : err);
+    return false;
+  }
+}
+
+function hexToBytes(hex) {
+  const clean = String(hex).trim();
+  if (clean.length % 2 !== 0 || /[^0-9a-fA-F]/.test(clean)) {
+    throw new Error("invalid hex");
+  }
+  const bytes = new Uint8Array(clean.length / 2);
+  for (let i = 0; i < bytes.length; i++) {
+    bytes[i] = parseInt(clean.substr(i * 2, 2), 16);
+  }
+  return bytes;
+}
+
+function jsonResponse(obj, status = 200) {
+  return new Response(JSON.stringify(obj), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
 }
 
 function errorPage(message) {

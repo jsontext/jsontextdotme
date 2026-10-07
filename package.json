@@ -7,7 +7,8 @@
     "push": "node build.js && git add -A && git commit -m \"Update site\" && git push origin main && git push origin cloudflare/workers-autoconfig",
     "deploy": "wrangler deploy",
     "preview": "wrangler dev",
-    "start": "node server.js"
+    "start": "node server.js",
+    "register": "node scripts/register-commands.mjs"
   },
   "devDependencies": {
     "wrangler": "^4.148.0"
