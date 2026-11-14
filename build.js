@@ -23,4 +23,15 @@ if (fs.existsSync(path.join(__dirname, 'jsontext.me-skybox.html'))) {
   fs.copyFileSync(path.join(__dirname, 'jsontext.me-skybox.html'), path.join(distSkyboxDir, 'index.html'));
 }
 
+// Copy static subpages (privacy, terms)
+['privacy', 'terms'].forEach(name => {
+  const src = path.join(__dirname, `${name}.html`);
+  if (!fs.existsSync(src)) return;
+  [path.join(__dirname, name), path.join(distDir, name)].forEach(dir => {
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.copyFileSync(src, path.join(dir, 'index.html'));
+  });
+  fs.copyFileSync(src, path.join(distDir, `${name}.html`));
+});
+
 console.log('Build complete: All HTML files and dist directories synced successfully.');

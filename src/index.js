@@ -74,10 +74,39 @@ async function handleCallback(url, env) {
   }
 
   const username = user.preferred_username || user.name || "";
+  await logVerification(payload.d, user.sub, username, env).catch(() => {});
+
   const back = new URL("/", url.origin);
   back.searchParams.set("verify", "success");
   if (username) back.searchParams.set("username", username);
   return Response.redirect(back.toString(), 302);
+}
+
+async function logVerification(discordId, robloxId, username, env) {
+  const channelId = env.VERIFY_LOG_CHANNEL_ID || env.LOG_CHANNEL_ID;
+  if (!channelId || !env.DISCORD_BOT_TOKEN) return;
+
+  await fetch(`${DISCORD_API}/channels/${channelId}/messages`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bot ${env.DISCORD_BOT_TOKEN}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      embeds: [
+        {
+          title: "Roblox Verification",
+          color: 0x2ea44f,
+          fields: [
+            { name: "Discord", value: `<@${discordId}> (\`${discordId}\`)`, inline: true },
+            { name: "Roblox", value: `${username || "unknown"} (\`${robloxId}\`)`, inline: true },
+          ],
+          footer: { text: `verify-sync:${discordId}:${robloxId}:${username || ""}` },
+          timestamp: new Date().toISOString(),
+        },
+      ],
+    }),
+  });
 }
 
 async function exchangeCode(code, env) {
