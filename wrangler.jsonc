@@ -6,6 +6,9 @@
   "observability": {
     "enabled": true
   },
+  "vars": {
+    "LOG_CHANNEL_ID": "1557308625394073640"
+  },
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
