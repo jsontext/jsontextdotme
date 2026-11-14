@@ -10,7 +10,7 @@ export default {
     const url = new URL(request.url);
 
     try {
-      if (url.pathname === "/verify") {
+      if (url.pathname === "/verify/start") {
         return await handleVerify(url, env);
       }
       if (url.pathname === "/callback") {
@@ -76,7 +76,7 @@ async function handleCallback(url, env) {
   const username = user.preferred_username || user.name || "";
   await logVerification(payload.d, user.sub, username, env).catch(() => {});
 
-  const back = new URL("/", url.origin);
+  const back = new URL("/verify", url.origin);
   back.searchParams.set("verify", "success");
   if (username) back.searchParams.set("username", username);
   return Response.redirect(back.toString(), 302);
@@ -264,24 +264,16 @@ function errorPage(message) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Verification</title>
+<link rel="icon" type="image/png" href="/favicon.png">
 <style>
-  html,body{margin:0;height:100%;background:#fbfbfb;color:#2c2c2c;
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
-  .wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:24px}
-  .card{max-width:420px;text-align:center}
-  h1{font-size:18px;font-weight:600;margin:0 0 12px}
-  p{font-size:14px;line-height:1.6;color:#5a5a5a;margin:0 0 20px}
-  a{font-size:14px;color:#2c2c2c}
+  html,body{margin:0;height:100%;background:#ffffff;color:#1f2328;
+    font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    display:flex;align-items:center;justify-content:center}
+  p{margin:0;padding:0 24px;font-size:14.5px;white-space:nowrap}
 </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="card">
-      <h1>Verification</h1>
-      <p>${safe}</p>
-      <a href="/">Back to jsontext.me</a>
-    </div>
-  </div>
+  <p>${safe}</p>
 </body>
 </html>`;
 

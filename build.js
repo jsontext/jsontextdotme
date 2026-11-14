@@ -23,8 +23,8 @@ if (fs.existsSync(path.join(__dirname, 'jsontext.me-skybox.html'))) {
   fs.copyFileSync(path.join(__dirname, 'jsontext.me-skybox.html'), path.join(distSkyboxDir, 'index.html'));
 }
 
-// Copy static subpages (privacy, terms, oauth)
-['privacy', 'terms', 'oauth'].forEach(name => {
+// Copy static subpages (privacy, terms, oauth, verify)
+['privacy', 'terms', 'oauth', 'verify'].forEach(name => {
   const src = path.join(__dirname, `${name}.html`);
   if (!fs.existsSync(src)) return;
   [path.join(__dirname, name), path.join(distDir, name)].forEach(dir => {
@@ -33,5 +33,9 @@ if (fs.existsSync(path.join(__dirname, 'jsontext.me-skybox.html'))) {
   });
   fs.copyFileSync(src, path.join(distDir, `${name}.html`));
 });
+
+if (fs.existsSync(path.join(__dirname, 'favicon.png'))) {
+  fs.copyFileSync(path.join(__dirname, 'favicon.png'), path.join(distDir, 'favicon.png'));
+}
 
 console.log('Build complete: All HTML files and dist directories synced successfully.');

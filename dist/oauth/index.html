@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>How Roblox OAuth 2.0 Works — jsontext.me</title>
+  <title>How Roblox OAuth 2.0 Works</title>
+  <link rel="icon" type="image/png" href="/favicon.png">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -93,7 +94,7 @@
       const token = sessionStorage.getItem('verify_token');
       if (!token) return;
       const link = document.getElementById('back-verify');
-      link.href = '/?t=' + encodeURIComponent(token);
+      link.href = '/verify?t=' + encodeURIComponent(token);
       link.hidden = false;
     })();
   </script>
