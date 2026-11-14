@@ -47,6 +47,8 @@
       border-top: 1px solid #eaeef2;
       font-size: 13px;
       color: #656d76;
+      display: flex;
+      gap: 16px;
     }
     a { color: #1f2328; }
   </style>
@@ -65,8 +67,18 @@
       <li><strong>Enforcement &amp; Support:</strong> Server administrators may revoke verified roles, restrict bot access, or take moderation action for violations of these terms or server rules. For assistance or data requests, open a support ticket in the Discord server.</li>
     </ul>
     <footer>
+      <a id="back-verify" href="/" hidden>Back to Verification</a>
       <a href="/privacy">Privacy Policy</a>
     </footer>
   </main>
+  <script>
+    (function () {
+      const token = sessionStorage.getItem('verify_token');
+      if (!token) return;
+      const link = document.getElementById('back-verify');
+      link.href = '/?t=' + encodeURIComponent(token);
+      link.hidden = false;
+    })();
+  </script>
 </body>
 </html>

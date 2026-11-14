@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How Roblox OAuth 2.0 Works — jsontext.me</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 20px;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #1f2328;
+      background: #ffffff;
+      line-height: 1.65;
+    }
+    main {
+      width: 100%;
+      max-width: 640px;
+    }
+    h1 {
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: -0.015em;
+      margin-bottom: 6px;
+    }
+    .subtitle {
+      font-size: 13.5px;
+      color: #656d76;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #eaeef2;
+    }
+    ul {
+      padding-left: 18px;
+      font-size: 14.5px;
+    }
+    li {
+      margin-bottom: 13px;
+    }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12.5px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: #f6f8fa;
+      border: 1px solid #eaeef2;
+      color: #1f2328;
+    }
+    mark {
+      background: #e8f0fe;
+      color: #174ea6;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+    footer {
+      margin-top: 28px;
+      padding-top: 16px;
+      border-top: 1px solid #eaeef2;
+      font-size: 13px;
+      color: #656d76;
+      display: flex;
+      gap: 16px;
+    }
+    a { color: #1a73e8; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    footer a { color: #57606a; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>How Roblox OAuth 2.0 Verification Works</h1>
+    <p class="subtitle">Official, passwordless account linking between Roblox and Discord</p>
+    <ul>
+      <li><strong>What is Roblox OAuth 2.0?</strong> OAuth 2.0 is Roblox&rsquo;s official authorization standard. Instead of typing your password into a third-party site, you sign in directly on <code>apis.roblox.com</code> and approve exactly what information may be shared.</li>
+      <li><strong>Minimal Scopes Only:</strong> This application requests only <code>openid</code> and <code>profile</code>. That provides your <mark>Roblox User ID</mark>, <mark>username</mark>, and <mark>display name</mark>&mdash;nothing else.</li>
+      <li><strong>What Is <em>Never</em> Accessed:</strong> Your Roblox password, email address, 2FA codes, Robux balance, inventory, and friend list are <em>never</em> requested, visible, or stored.</li>
+      <li><strong>How the Link Is Secured:</strong> When you click <strong>Verify yourself</strong> in Discord, the bot generates a short-lived (15-minute), HMAC-SHA256 signed state token tied to your Discord User ID so no one else can claim or forge your verification.</li>
+      <li><strong>After You Approve:</strong> Roblox redirects back to <code>jsontext.me/callback</code>, the Worker reads your public Roblox profile once in memory, grants your verified Discord role, and logs the Discord-to-Roblox ID link for server administrators.</li>
+    </ul>
+    <footer>
+      <a id="back-verify" href="/" hidden>Back to Verification</a>
+      <a href="/privacy">Privacy Policy</a>
+      <a href="/terms">Terms of Service</a>
+    </footer>
+  </main>
+  <script>
+    (function () {
+      const token = sessionStorage.getItem('verify_token');
+      if (!token) return;
+      const link = document.getElementById('back-verify');
+      link.href = '/?t=' + encodeURIComponent(token);
+      link.hidden = false;
+    })();
+  </script>
+</body>
+</html>
