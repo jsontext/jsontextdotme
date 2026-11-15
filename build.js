@@ -34,8 +34,10 @@ if (fs.existsSync(path.join(__dirname, 'jsontext.me-skybox.html'))) {
   fs.copyFileSync(src, path.join(distDir, `${name}.html`));
 });
 
-if (fs.existsSync(path.join(__dirname, 'favicon.png'))) {
-  fs.copyFileSync(path.join(__dirname, 'favicon.png'), path.join(distDir, 'favicon.png'));
-}
+['favicon.png', 'me.png'].forEach(asset => {
+  if (fs.existsSync(path.join(__dirname, asset))) {
+    fs.copyFileSync(path.join(__dirname, asset), path.join(distDir, asset));
+  }
+});
 
 console.log('Build complete: All HTML files and dist directories synced successfully.');

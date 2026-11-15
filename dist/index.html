@@ -6,8 +6,74 @@
   <title>jsontext.me</title>
   <link rel="icon" type="image/png" href="/favicon.png">
   <style>
-    html, body { width: 100%; height: 100%; margin: 0; background: #ffffff; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 20px;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #1f2328;
+      background: #ffffff;
+      line-height: 1.5;
+    }
+    main {
+      width: 100%;
+      max-width: 440px;
+      display: flex;
+      align-items: flex-end;
+      gap: 24px;
+    }
+    .intro {
+      flex: 1;
+      min-width: 0;
+    }
+    h1 {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      margin-bottom: 6px;
+    }
+    p {
+      font-size: 14.5px;
+      color: #57606a;
+    }
+    .cta {
+      margin-top: 16px;
+    }
+    .cta a {
+      font-weight: 400;
+      color: #1f2328;
+      text-decoration: underline;
+    }
+    .cta a:hover {
+      text-decoration: underline;
+    }
+    .avatar {
+      width: 112px;
+      height: auto;
+      display: block;
+      flex-shrink: 0;
+    }
+    @media (max-width: 480px) {
+      main {
+        flex-direction: column-reverse;
+        align-items: center;
+        text-align: center;
+      }
+    }
   </style>
 </head>
-<body></body>
+<body>
+  <main>
+    <div class="intro">
+      <h1>HI!</h1>
+      <p>I'm jsontext, currently working on a first-person shooter game.</p>
+      <p class="cta"><a href="https://discord.gg/BjhSYhpG5t" target="_blank" rel="noopener noreferrer">Join the community today!</a></p>
+    </div>
+    <img class="avatar" src="/me.png" alt="jsontext">
+  </main>
+</body>
 </html>
